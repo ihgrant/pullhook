@@ -2,9 +2,10 @@ require("dotenv").config();
 const http = require("http");
 const git = require("simple-git/promise");
 const winston = require("winston");
+const spawn = require("child_process").spawn;
 
 const PORT = process.env.PORT || 8000;
-const WORKING_DIR_PATH = process.env.WORKING_DIR_PATH;
+const { AFTER_PULL, WORKING_DIR_PATH } = process.env;
 
 if (!WORKING_DIR_PATH) {
     console.error(
@@ -30,6 +31,21 @@ const srv = http.createServer((req, res) => {
         .then(() => repo.clean("f"))
         .then(() => repo.checkout(["--", "."]))
         .then(() => repo.pull(["origin','master"]))
+        .then(() => {
+            if (AFTER_PULL) {
+                return new Promise((resolve, reject) => {
+                    const ps = spawn(AFTER_PULL, [], {
+                        cwd: WORKING_DIR_PATH,
+                        shell: true
+                    });
+                    ps.stdout.on("data", data => winston.info(`${data}`));
+                    ps.stderr.on("data", data => winston.error(`${data}`));
+                    ps.on("close", code => (code !== 0 ? reject() : resolve()));
+                });
+            } else {
+                winston.info("no AFTER_PULL command found");
+            }
+        })
         .then(() => {
             res.writeHead(200, { "Content-Type": "text/plain" });
             res.end("okay");
