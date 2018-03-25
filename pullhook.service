@@ -2,7 +2,11 @@
 Description=Git Pull Hook Listener
 
 [Service]
-ExecStart=/usr/local/bin/node /opt/nodeserver/server.js
+Environment=NODE_ENV=production
+Environment=WORKING_DIR_PATH=~
+Environment=PORT=8000
+Environment=AFTER_PULL=yarn install && yarn build
+ExecStart=/usr/bin/node ~/pullhook/server.js
 # Required on some systems
 #WorkingDirectory=/opt/nodeserver
 Restart=always
