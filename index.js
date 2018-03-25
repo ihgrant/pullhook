@@ -2,7 +2,7 @@ require("dotenv").config();
 const http = require("http");
 const git = require("simple-git/promise");
 const winston = require("winston");
-const spawn = require("child_process").spawn;
+const exec = require("child_process").exec;
 
 const PORT = process.env.PORT || 8000;
 const { AFTER_PULL, WORKING_DIR_PATH } = process.env;
@@ -16,6 +16,20 @@ if (!WORKING_DIR_PATH) {
 
 if (process.env.NODE_ENV === "production") {
     winston.add(winston.transports.File, { filename: "pullhook.log" });
+}
+
+function executeCommand(command) {
+    return new Promise((resolve, reject) => {
+        exec(command, { cwd: WORKING_DIR_PATH }, (error, stdout, stderr) => {
+            if (error) {
+                winston.error(error);
+                reject(error);
+            } else {
+                winston.info(stdout);
+                resolve();
+            }
+        });
+    });
 }
 
 const srv = http.createServer((req, res) => {
@@ -33,20 +47,13 @@ const srv = http.createServer((req, res) => {
         .then(() => repo.pull(["origin','master"]))
         .then(() => {
             if (AFTER_PULL) {
-                return new Promise((resolve, reject) => {
-                    const ps = spawn(AFTER_PULL, [], {
-                        cwd: WORKING_DIR_PATH,
-                        shell: true
-                    });
-                    ps.stdout.on("data", data => winston.info(`${data}`));
-                    ps.stderr.on("data", data => winston.error(`${data}`));
-                    ps.on("close", code => (code !== 0 ? reject() : resolve()));
-                });
+                return executeCommand(AFTER_PULL);
             } else {
                 winston.info("no AFTER_PULL command found");
             }
         })
         .then(() => {
+            winston.info(">> finished");
             res.writeHead(200, { "Content-Type": "text/plain" });
             res.end("okay");
         })

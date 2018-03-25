@@ -3,10 +3,10 @@ Description=Git Pull Hook Listener
 
 [Service]
 Environment=NODE_ENV=production
-Environment=WORKING_DIR_PATH=~
+Environment=WORKING_DIR_PATH=/home/user/targetdirectory
 Environment=PORT=8000
 Environment=AFTER_PULL=yarn install && yarn build
-ExecStart=/usr/bin/node ~/pullhook/server.js
+ExecStart=/usr/bin/node /home/user/pullhook/server.js
 # Required on some systems
 #WorkingDirectory=/opt/nodeserver
 Restart=always
@@ -18,7 +18,6 @@ StandardError=syslog
 SyslogIdentifier=pullhook
 #User=<alternate user>
 #Group=<alternate group>
-# Environment=NODE_ENV=production PORT=1337
 
 [Install]
 WantedBy=multi-user.target
