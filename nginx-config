@@ -1,0 +1,31 @@
+server {
+        listen 80;
+        server_name hooks.chenghiz.net;
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+
+        location /.well-known {
+                alias /home/limited/chenghiz-blog/static/.well-known;
+        }
+
+        location / {
+                proxy_set_header Host $host;
+                proxy_pass http://localhost:8000;
+        }
+}
+
+server {
+        listen 443 ssl;
+        server_name hooks.chenghiz.net;
+        ssl_certificate /etc/letsencrypt/live/chenghiz.net/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/chenghiz.net/privkey.pem;
+
+        location /.well-known {
+                alias /home/limited/chenghiz-blog/static/.well-known;
+        }
+
+        location / {
+                proxy_set_header Host $host;
+                proxy_pass http://localhost:8000;
+        }
+}
