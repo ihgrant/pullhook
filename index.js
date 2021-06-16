@@ -32,10 +32,10 @@ function executeCommand(command) {
     });
 }
 
-const srv = http.createServer((req, res) => {
+function pull(res) {
     const repo = git(WORKING_DIR_PATH);
 
-    repo
+    return repo
         .outputHandler((command, stdout, stderr) => {
             winston.info(command);
             stdout.pipe(process.stdout);
@@ -52,15 +52,32 @@ const srv = http.createServer((req, res) => {
                 winston.info("no AFTER_PULL command found");
             }
         })
-        .then(() => {
-            winston.info(">> finished");
-            res.writeHead(200, { "Content-Type": "text/plain" });
-            res.end("okay");
-        })
-        .catch(err => {
-            res.writeHead(500, { "Content-Type": "text/plain" });
-            res.end(err.message);
-        });
+}
+
+const srv = http.createServer((req, res) => {
+    switch (req.method) {
+        case 'GET':
+            res.writeHead(200)
+            res.end()
+            break;
+        case 'POST':
+            pull()
+                .then(() => {
+                    winston.info(">> finished");
+                    res.writeHead(200, { "Content-Type": "text/plain" });
+                    res.end("okay");
+                })
+                .catch(err => {
+                    res.writeHead(500, { "Content-Type": "text/plain" });
+                    res.end(err.message);
+                });
+            break;
+        default:
+            winston.error(`method ${req.method} was not matched.`)
+            res.writeHead(400)
+            res.end()
+            break;
+    }
 });
 
 srv.listen(PORT, () => {
